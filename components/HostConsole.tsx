@@ -567,31 +567,72 @@ export function HostConsole({ state, executeAction }: HostConsoleProps) {
         return (
           <div className="p-6 rounded-3xl bg-[#180f2d] border-2 border-amber-500/40 space-y-6 shadow-xl">
             {/* Header & Question Selector */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-amber-500/20">
-              <div>
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">
-                  Round 1 • One-to-One Direct &amp; Pass
-                </span>
-                <h3 className="text-xl font-bold font-cinzel text-amber-200">
-                  Question #{qIndex + 1} of {round1Questions.length}
-                </h3>
+            <div className="flex flex-col gap-3 pb-4 border-b border-amber-500/20">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">
+                      Round 1 • Sub-Round {Math.floor(qIndex / 6) + 1} of 3
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/30">
+                      20s Direct / 10s Pass
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold font-cinzel text-amber-200">
+                    Question #{qIndex + 1} of {round1Questions.length} (Assigned to Seat {q?.assignedSeat})
+                  </h3>
+                </div>
+
+                <div className="text-xs font-mono text-amber-300/80">
+                  {round1State.isPassed ? 'Passed Turn: 10s Timer' : 'Direct Turn: 20s Timer'}
+                </div>
               </div>
 
-              {/* Quick Jump Buttons */}
-              <div className="flex items-center gap-1.5 overflow-x-auto">
-                {round1Questions.map((item, idx) => (
-                  <button
-                    key={item.id}
-                    onClick={() => executeAction('set_round1_question', { questionIndex: idx })}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold border transition-colors ${
-                      idx === qIndex
-                        ? 'bg-amber-500 text-black border-yellow-300'
-                        : 'bg-black/40 text-amber-300/70 border-amber-500/30 hover:text-amber-100'
-                    }`}
-                  >
-                    Q{idx + 1} (Seat {item.assignedSeat})
-                  </button>
-                ))}
+              {/* Sub-Rounds 1, 2, 3 Question Jumpers */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                {[0, 1, 2].map((subRoundIdx) => {
+                  const subQuestions = round1Questions.slice(subRoundIdx * 6, subRoundIdx * 6 + 6);
+                  const isCurrentSubRound = Math.floor(qIndex / 6) === subRoundIdx;
+
+                  return (
+                    <div
+                      key={subRoundIdx}
+                      className={`p-2.5 rounded-xl border flex flex-col gap-1.5 ${
+                        isCurrentSubRound
+                          ? 'bg-amber-950/40 border-amber-400 shadow-md'
+                          : 'bg-black/40 border-amber-500/20 opacity-80'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-[11px] font-bold text-amber-300 uppercase">
+                        <span>Sub-Round {subRoundIdx + 1} (Seats 1-6)</span>
+                        {isCurrentSubRound && (
+                          <span className="text-[9px] bg-amber-500 text-black px-1.5 py-0.5 rounded font-black">
+                            ACTIVE
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-6 gap-1">
+                        {subQuestions.map((item, localIdx) => {
+                          const realIdx = subRoundIdx * 6 + localIdx;
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => executeAction('set_round1_question', { questionIndex: realIdx })}
+                              className={`py-1 rounded text-[11px] font-bold border transition-colors ${
+                                realIdx === qIndex
+                                  ? 'bg-amber-500 text-black border-yellow-300 font-black'
+                                  : 'bg-black/60 text-amber-200/70 border-amber-500/20 hover:text-amber-100'
+                              }`}
+                              title={`Q${realIdx + 1} (Seat ${item.assignedSeat})`}
+                            >
+                              S{item.assignedSeat}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -1019,16 +1060,28 @@ export function HostConsole({ state, executeAction }: HostConsoleProps) {
                     </div>
                   </div>
 
-                  {/* Immediate contestant selection display */}
-                  {buzzerState.selectedOptionIndex !== null ? (
-                    <div className="px-3.5 py-1.5 rounded-xl bg-black text-amber-300 border border-yellow-200 text-xs font-black uppercase tracking-wider animate-pulse">
-                      Contestant Picked: Option {['A', 'B', 'C', 'D'][buzzerState.selectedOptionIndex]}
+                  <div className="flex items-center gap-2">
+                    {/* 10-Second Clock Display */}
+                    <div className={`px-3 py-1.5 rounded-xl font-mono font-black text-xs border flex items-center gap-1.5 shadow ${
+                      timer.secondsLeft <= 3
+                        ? 'bg-red-600 text-white border-red-300 animate-bounce'
+                        : 'bg-black text-yellow-300 border-yellow-200'
+                    }`}>
+                      <span>⏱️</span>
+                      <span>10s Clock: {timer.secondsLeft}s</span>
                     </div>
-                  ) : (
-                    <div className="text-xs font-bold text-black/80 bg-black/10 px-3 py-1 rounded-lg">
-                      Waiting for contestant option...
-                    </div>
-                  )}
+
+                    {/* Immediate contestant selection display */}
+                    {buzzerState.selectedOptionIndex !== null ? (
+                      <div className="px-3.5 py-1.5 rounded-xl bg-black text-amber-300 border border-yellow-200 text-xs font-black uppercase tracking-wider animate-pulse">
+                        Contestant Picked: Option {['A', 'B', 'C', 'D'][buzzerState.selectedOptionIndex]}
+                      </div>
+                    ) : (
+                      <div className="text-xs font-bold text-black/80 bg-black/10 px-3 py-1 rounded-lg">
+                        Waiting for contestant option...
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Primary Action Buttons */}
@@ -1354,6 +1407,69 @@ export function HostConsole({ state, executeAction }: HostConsoleProps) {
                   >
                     Next Tie Question (#{qIndex + 2}) →
                   </button>
+                )}
+              </div>
+
+              {/* Live Submissions Tracker for Host */}
+              <div className="p-4 rounded-2xl bg-black/40 border border-cyan-500/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-bold text-cyan-400 uppercase">
+                    3. Live Tied Submissions Received ({Object.keys(tieBreakerState.submissions).length} / {tieBreakerState.tiedParticipantIds.length || participants.length})
+                  </div>
+                  {tieBreakerState.isCompleted && (
+                    <span className="px-2.5 py-0.5 rounded bg-emerald-500 text-black text-[10px] font-black uppercase">
+                      Winner Determined!
+                    </span>
+                  )}
+                </div>
+
+                {Object.keys(tieBreakerState.submissions).length === 0 ? (
+                  <div className="text-xs text-cyan-200/50 italic py-2">
+                    Waiting for tied contestants to submit their answers on mobile...
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {Object.values(tieBreakerState.submissions).map((sub) => {
+                      const participantObj = participants.find((p) => p.id === sub.participantId);
+                      const isWinner = tieBreakerState.winnerParticipantId === sub.participantId;
+
+                      return (
+                        <div
+                          key={sub.participantId}
+                          className={`p-3 rounded-xl border flex items-center justify-between text-xs ${
+                            isWinner
+                              ? 'bg-gradient-to-r from-amber-500/30 to-yellow-500/20 border-yellow-300 text-yellow-100 font-bold shadow'
+                              : sub.isCorrect
+                              ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+                              : 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{participantObj?.avatar || '👤'}</span>
+                            <span className="font-bold">
+                              Seat {participantObj?.seatNumber}: {participantObj?.spiritualName}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[11px] bg-black/40 px-2 py-0.5 rounded">
+                              {(sub.timeTakenMs / 1000).toFixed(2)}s
+                            </span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                              sub.isCorrect ? 'bg-emerald-500 text-black' : 'bg-rose-500 text-white'
+                            }`}>
+                              Opt {['A', 'B', 'C', 'D'][sub.selectedOptionIndex]} {sub.isCorrect ? '✓' : '✗'}
+                            </span>
+                            {isWinner && (
+                              <span className="text-[10px] font-black bg-yellow-400 text-black px-1.5 py-0.5 rounded">
+                                👑 WINNER (+10)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </div>

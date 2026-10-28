@@ -415,9 +415,14 @@ export function PresenterScreen({ state, isStandalone = false }: PresenterScreen
                     </div>
                   </div>
 
-                  <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-bold text-xs uppercase">
-                    Q{round1State.currentQuestionIndex + 1} of {round1Questions.length}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-bold text-xs uppercase border border-amber-500/30">
+                      Sub-Round {Math.floor(round1State.currentQuestionIndex / 6) + 1} of 3
+                    </span>
+                    <span className="px-3 py-1 rounded-xl bg-black/60 text-amber-200 font-mono font-bold text-xs uppercase border border-amber-500/20">
+                      Q{round1State.currentQuestionIndex + 1} of {round1Questions.length}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Question Box */}
@@ -605,18 +610,32 @@ export function PresenterScreen({ state, isStandalone = false }: PresenterScreen
                     </div>
                   </div>
 
-                  {/* Immediate Selection Notice if participant picked an option before reveal */}
-                  {buzzerState.selectedOptionIndex !== null && !isRevealed && (
-                    <div className="px-3.5 py-1.5 rounded-xl bg-black text-amber-300 border border-yellow-300 text-xs font-black uppercase tracking-wider animate-pulse">
-                      Selected: Option {letters[buzzerState.selectedOptionIndex]}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {/* Buzzer 10s countdown clock */}
+                    {buzzerState.status === 'BUZZED' && !isRevealed && (
+                      <div className={`px-3.5 py-1.5 rounded-xl font-mono font-black text-sm border flex items-center gap-1.5 shadow ${
+                        timer.secondsLeft <= 3
+                          ? 'bg-red-600 text-white border-red-300 animate-bounce'
+                          : 'bg-black text-yellow-300 border-yellow-300'
+                      }`}>
+                        <span>⏱️</span>
+                        <span>{timer.secondsLeft}s</span>
+                      </div>
+                    )}
 
-                  {isRevealed && (
-                    <div className="px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white font-black text-xs uppercase tracking-wider">
-                      Answer Revealed
-                    </div>
-                  )}
+                    {/* Immediate Selection Notice if participant picked an option before reveal */}
+                    {buzzerState.selectedOptionIndex !== null && !isRevealed && (
+                      <div className="px-3.5 py-1.5 rounded-xl bg-black text-amber-300 border border-yellow-300 text-xs font-black uppercase tracking-wider animate-pulse">
+                        Selected: Option {letters[buzzerState.selectedOptionIndex]}
+                      </div>
+                    )}
+
+                    {isRevealed && (
+                      <div className="px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white font-black text-xs uppercase tracking-wider">
+                        Answer Revealed
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Big Question & 4 Options */}

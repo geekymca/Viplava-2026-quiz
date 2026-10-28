@@ -59,7 +59,7 @@ if (!global.__TIMER_INTERVAL__) {
           // Auto-timeout transitions
           if (state.phase === 'ROUND_1_ACTIVE') {
             if (!state.round1State.isPassed && state.round1State.passCount === 0) {
-              // Direct question timed out -> auto pass to next seat
+              // Direct question timed out -> auto pass to next seat (10 seconds)
               const currentSeat = state.round1State.targetSeat;
               const nextSeat = (currentSeat % 6) + 1;
               state.round1State.targetSeat = nextSeat;
@@ -67,8 +67,8 @@ if (!global.__TIMER_INTERVAL__) {
               state.round1State.passCount = 1;
               state.round1State.status = 'PASSED';
               state.round1State.selectedOptionIndex = null;
-              state.timer.secondsLeft = 15;
-              state.timer.initialSeconds = 15;
+              state.timer.secondsLeft = 10;
+              state.timer.initialSeconds = 10;
               state.timer.isRunning = true;
             } else {
               // Pass question timed out -> reveal answer
@@ -78,7 +78,31 @@ if (!global.__TIMER_INTERVAL__) {
           } else if (state.phase === 'ROUND_2_ACTIVE') {
             state.round2State.isCompleted = true;
           } else if (state.phase === 'ROUND_3_ACTIVE') {
-            state.buzzerState.isUnlocked = false;
+            // Buzzer round: 10s answer timer expired for buzzed candidate
+            if (state.buzzerState.status === 'BUZZED' && state.buzzerState.buzzedParticipantId) {
+              const buzzedId = state.buzzerState.buzzedParticipantId;
+              const participant = state.participants.find((p) => p.id === buzzedId);
+              if (participant) {
+                participant.scores.round3 -= 5;
+                participant.totalScore -= 5;
+                state.lastScoreChange = {
+                  participantId: participant.id,
+                  round: 'round3',
+                  delta: -5,
+                  description: 'Buzzer 10s Time Expired (-5)',
+                  timestamp: Date.now(),
+                };
+              }
+              // Re-unlock buzzer for other contestants
+              state.buzzerState.buzzedParticipantId = null;
+              state.buzzerState.selectedOptionIndex = null;
+              state.buzzerState.isUnlocked = true;
+              state.buzzerState.status = 'UNLOCKED';
+              state.timer.secondsLeft = 10;
+              state.timer.isRunning = false;
+            } else {
+              state.buzzerState.isUnlocked = false;
+            }
           }
         }
 
@@ -121,20 +145,41 @@ export const quizStore = {
 
     // Reset timer according to phase defaults - automatically start on active rounds
     if (phase === 'ROUND_1_ACTIVE') {
-      state.timer.initialSeconds = 30;
-      state.timer.secondsLeft = 30;
+      state.timer.initialSeconds = 20;
+      state.timer.secondsLeft = 20;
       state.timer.isRunning = true;
     } else if (phase === 'ROUND_2_ACTIVE') {
       state.timer.initialSeconds = 60;
       state.timer.secondsLeft = 60;
       state.timer.isRunning = true;
     } else if (phase === 'ROUND_3_ACTIVE') {
-      state.timer.initialSeconds = 30;
-      state.timer.secondsLeft = 30;
-      state.timer.isRunning = true;
+      // Round 3: No timer countdown while reading questions; 10s clock starts when someone buzzes
+      state.timer.initialSeconds = 10;
+      state.timer.secondsLeft = 10;
+      state.timer.isRunning = false;
       state.buzzerState.isUnlocked = true;
       state.buzzerState.buzzedParticipantId = null;
       state.buzzerState.status = 'UNLOCKED';
+    } else if (phase === 'TIE_BREAKER_ACTIVE') {
+      state.timer.isRunning = false;
+      state.tieBreakerState.isQuestionLaunched = true;
+      if (state.tieBreakerState.tiedParticipantIds.length === 0) {
+        // Auto-detect top tied participants
+        const sorted = [...state.participants].sort((a, b) => b.totalScore - a.totalScore);
+        const topScore = sorted[0]?.totalScore ?? 0;
+        const tiedTop = sorted.filter((p) => p.totalScore === topScore);
+        if (tiedTop.length >= 2) {
+          state.tieBreakerState.tiedParticipantIds = tiedTop.map((p) => p.id);
+        } else {
+          const secondScore = sorted[1]?.totalScore ?? 0;
+          const tied23 = sorted.filter((p) => p.totalScore === secondScore);
+          if (tied23.length >= 2) {
+            state.tieBreakerState.tiedParticipantIds = tied23.map((p) => p.id);
+          } else {
+            state.tieBreakerState.tiedParticipantIds = state.participants.map((p) => p.id);
+          }
+        }
+      }
     } else {
       state.timer.isRunning = false;
     }
@@ -167,9 +212,8 @@ export const quizStore = {
       selectedOptionIndex: null,
       status: 'DIRECT',
     };
-    state.timer.secondsLeft = 30;
-    state.timer.initialSeconds = 30;
-    // Auto-start clock timer automatically when question appears
+    state.timer.secondsLeft = 20; // 20 seconds for direct
+    state.timer.initialSeconds = 20;
     state.timer.isRunning = true;
 
     broadcastChange();
@@ -197,8 +241,8 @@ export const quizStore = {
     state.round1State.isPassed = true;
     state.round1State.passCount = 1;
     state.round1State.status = 'PASSED';
-    state.timer.secondsLeft = 15; // 15 seconds for pass
-    state.timer.initialSeconds = 15;
+    state.timer.secondsLeft = 10; // 10 seconds for pass
+    state.timer.initialSeconds = 10;
     state.timer.isRunning = true;
 
     broadcastChange();
@@ -255,8 +299,8 @@ export const quizStore = {
         state.round1State.status = 'PASSED';
         state.round1State.selectedOptionIndex = null;
         state.round1State.isAnswerRevealed = false;
-        state.timer.secondsLeft = 15;
-        state.timer.initialSeconds = 15;
+        state.timer.secondsLeft = 10;
+        state.timer.initialSeconds = 10;
         state.timer.isRunning = true;
       } else {
         // Passed and wrong: mark as wrong, do not reveal so host can click Reveal Answer
@@ -300,8 +344,8 @@ export const quizStore = {
         state.round1State.status = 'PASSED';
         state.round1State.selectedOptionIndex = null;
         state.round1State.isAnswerRevealed = false;
-        state.timer.secondsLeft = 15;
-        state.timer.initialSeconds = 15;
+        state.timer.secondsLeft = 10;
+        state.timer.initialSeconds = 10;
         state.timer.isRunning = true;
       } else {
         state.round1State.isAnswerRevealed = false;
@@ -334,8 +378,8 @@ export const quizStore = {
     state.round1State.isAnswerRevealed = false;
     state.round1State.selectedOptionIndex = null;
     state.round1State.status = 'DIRECT';
-    state.timer.secondsLeft = 30;
-    state.timer.initialSeconds = 30;
+    state.timer.secondsLeft = 20;
+    state.timer.initialSeconds = 20;
     state.timer.isRunning = true;
 
     broadcastChange();
@@ -414,9 +458,9 @@ export const quizStore = {
       selectedOptionIndex: null,
       selectedAt: null,
     };
-    state.timer.secondsLeft = 30;
-    state.timer.initialSeconds = 30;
-    state.timer.isRunning = true;
+    state.timer.secondsLeft = 10;
+    state.timer.initialSeconds = 10;
+    state.timer.isRunning = false;
 
     broadcastChange();
     return quizStore.getState();
@@ -472,7 +516,8 @@ export const quizStore = {
       state.buzzerState.selectedOptionIndex = null;
       state.buzzerState.isUnlocked = true;
       state.buzzerState.status = 'UNLOCKED';
-      state.timer.isRunning = true;
+      state.timer.secondsLeft = 10;
+      state.timer.isRunning = false;
     }
 
     broadcastChange();
@@ -487,7 +532,9 @@ export const quizStore = {
     state.buzzerState.selectedOptionIndex = null;
     state.buzzerState.selectedAt = null;
     state.buzzerState.status = 'UNLOCKED';
-    state.timer.isRunning = true;
+    state.timer.secondsLeft = 10;
+    state.timer.initialSeconds = 10;
+    state.timer.isRunning = false;
 
     broadcastChange();
     return quizStore.getState();
@@ -540,7 +587,11 @@ export const quizStore = {
       state.buzzerState.selectedOptionIndex = null;
       state.buzzerState.selectedAt = null;
       state.buzzerState.buzzHistory.push({ participantId, timestamp: now });
-      state.timer.isRunning = false;
+      // 10 seconds to answer starts as soon as buzzer is pressed
+      state.timer.secondsLeft = 10;
+      state.timer.initialSeconds = 10;
+      state.timer.isRunning = true;
+      state.timer.lastUpdated = now;
 
       broadcastChange();
       return { success: true, buzzedFirst: true, buzzedAt: now };
@@ -652,9 +703,9 @@ export const quizStore = {
       selectedOptionIndex: null,
       selectedAt: null,
     };
-    state.timer.secondsLeft = 30;
-    state.timer.initialSeconds = 30;
-    state.timer.isRunning = true;
+    state.timer.secondsLeft = 10;
+    state.timer.initialSeconds = 10;
+    state.timer.isRunning = false;
 
     broadcastChange();
     return quizStore.getState();
@@ -669,7 +720,7 @@ export const quizStore = {
       submissions: {},
       isCompleted: false,
       winnerParticipantId: null,
-      isQuestionLaunched: false,
+      isQuestionLaunched: true,
     };
     state.timer.isRunning = false;
 
@@ -691,7 +742,7 @@ export const quizStore = {
     state.tieBreakerState.submissions = {};
     state.tieBreakerState.isCompleted = false;
     state.tieBreakerState.winnerParticipantId = null;
-    state.tieBreakerState.isQuestionLaunched = false;
+    state.tieBreakerState.isQuestionLaunched = true;
     state.timer.isRunning = false;
     broadcastChange();
     return quizStore.getState();
@@ -702,15 +753,26 @@ export const quizStore = {
     const question = state.tieBreakerQuestions[state.tieBreakerState.currentQuestionIndex];
     if (!question) return quizStore.getState();
 
+    // Match participant ID reliably across string formats ('p1', '1', or actual uuid/id)
+    const matched = state.participants.find(
+      (p) => p.id === participantId || `p${p.seatNumber}` === participantId || p.seatNumber.toString() === participantId
+    );
+    const resolvedId = matched ? matched.id : participantId;
+
     const isCorrect = optionIndex === question.correctOptionIndex;
 
-    state.tieBreakerState.submissions[participantId] = {
-      participantId,
+    state.tieBreakerState.submissions[resolvedId] = {
+      participantId: resolvedId,
       selectedOptionIndex: optionIndex,
-      timeTakenMs,
+      timeTakenMs: Math.max(100, Math.round(timeTakenMs)),
       isCorrect,
       submittedAt: Date.now(),
     };
+
+    // Ensure resolvedId is in tiedParticipantIds
+    if (!state.tieBreakerState.tiedParticipantIds.includes(resolvedId)) {
+      state.tieBreakerState.tiedParticipantIds.push(resolvedId);
+    }
 
     // Check if all tied participants have submitted or calculate winner
     const tiedCount = state.tieBreakerState.tiedParticipantIds.length;

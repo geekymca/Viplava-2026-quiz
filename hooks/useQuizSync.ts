@@ -25,10 +25,17 @@ export function useQuizSync() {
     try {
       const res = await fetch('/api/quiz', { cache: 'no-store' });
       if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.state) {
-          updateStateIfNewer(json.state);
-          setIsConnected(true);
+        const text = await res.text();
+        if (text && !text.trim().startsWith('<')) {
+          try {
+            const json = JSON.parse(text);
+            if (json.success && json.state) {
+              updateStateIfNewer(json.state);
+              setIsConnected(true);
+            }
+          } catch (jsonErr) {
+            console.warn('Invalid JSON in fetchState:', jsonErr);
+          }
         }
       }
     } catch (e) {
@@ -48,8 +55,13 @@ export function useQuizSync() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action, payload }),
         });
-        if (res.ok) {
-          const json = await res.json();
+        const text = await res.text();
+        if (!text || text.trim().startsWith('<')) {
+          console.warn(`Server returned non-JSON/HTML (${res.status}) for action ${action}`);
+          return { success: false, error: `Server returned non-JSON (${res.status})` };
+        }
+        try {
+          const json = JSON.parse(text);
           if (json.success && json.state) {
             updateStateIfNewer(json.state);
             // Also notify local BroadcastChannel
@@ -58,9 +70,12 @@ export function useQuizSync() {
             }
           }
           return json;
+        } catch (jsonErr) {
+          console.warn('Execute action non-JSON payload:', jsonErr);
+          return { success: false, error: 'Malformed JSON response' };
         }
       } catch (err) {
-        console.error('Execute action failed:', err);
+        console.error('Execute action network error:', err);
       }
       return { success: false };
     },

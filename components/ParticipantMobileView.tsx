@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Zap,
   CheckCircle,
@@ -10,7 +10,7 @@ import {
   Radio,
   Send,
 } from 'lucide-react';
-import { QuizState } from '@/lib/types';
+import { QuizState, TieBreakerQuestion, TieBreakerSubmission, Participant } from '@/lib/types';
 import { soundManager } from '@/lib/soundEffects';
 
 interface ParticipantMobileViewProps {
@@ -242,7 +242,10 @@ export function ParticipantMobileView({ state, executeAction, forcedSeat }: Part
     phase === 'ROUND_1_ACTIVE' && round1State.targetSeat === selectedSeat;
   const isRound2MyTurn =
     phase === 'ROUND_2_ACTIVE' && round2State.currentSeat === selectedSeat;
-  const didIBuzzFirst = buzzerState.buzzedParticipantId === participantId;
+  const didIBuzzFirst =
+    buzzerState.buzzedParticipantId === participantId ||
+    buzzerState.buzzedParticipantId === participant?.id ||
+    buzzerState.buzzedParticipantId === `p${selectedSeat}`;
 
   return (
     <div className="max-w-md mx-auto p-3 sm:p-4 min-h-[calc(100vh-75px)] flex flex-col justify-between text-amber-50 animate-fadeIn">
@@ -692,9 +695,16 @@ export function ParticipantMobileView({ state, executeAction, forcedSeat }: Part
                     {didIBuzzFirst ? (
                       <div className="space-y-3">
                         <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-center font-black shadow-lg">
-                          <div className="text-xs uppercase tracking-wider">🎉 YOU BUZZED IN FIRST!</div>
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs uppercase tracking-wider">🎉 YOU BUZZED IN FIRST!</div>
+                            <div className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-black ${
+                              timer.secondsLeft <= 3 ? 'bg-red-600 text-white animate-pulse' : 'bg-black text-yellow-300'
+                            }`}>
+                              ⏱️ {timer.secondsLeft}s
+                            </div>
+                          </div>
                           <div className="text-xs font-semibold mt-0.5">
-                            Tap your chosen option below:
+                            Tap your chosen option below (10s answer limit):
                           </div>
                         </div>
 
@@ -787,7 +797,12 @@ export function ParticipantMobileView({ state, executeAction, forcedSeat }: Part
           {/* TIE BREAKER: FASTEST FINGER FIRST */}
           {phase === 'TIE_BREAKER_ACTIVE' && (() => {
             const q = tieBreakerQuestions[tieBreakerState.currentQuestionIndex];
-            const isTied = tieBreakerState.tiedParticipantIds.includes(participantId);
+            const isTied =
+              tieBreakerState.tiedParticipantIds.length === 0 ||
+              tieBreakerState.tiedParticipantIds.includes(participantId) ||
+              tieBreakerState.tiedParticipantIds.includes(participant?.id || '') ||
+              tieBreakerState.tiedParticipantIds.includes(`p${selectedSeat}`) ||
+              tieBreakerState.tiedParticipantIds.includes(String(selectedSeat));
 
             if (!isTied) {
               return (
@@ -801,7 +816,7 @@ export function ParticipantMobileView({ state, executeAction, forcedSeat }: Part
             }
 
             // If selected tied participant, check if host has launched the question
-            if (!tieBreakerState.isQuestionLaunched) {
+            if (tieBreakerState.isQuestionLaunched === false) {
               return (
                 <div className="p-6 rounded-3xl bg-[#160d28] border border-cyan-500/40 text-center space-y-3 animate-fadeIn">
                   <div className="text-3xl">🎯</div>
@@ -813,33 +828,24 @@ export function ParticipantMobileView({ state, executeAction, forcedSeat }: Part
               );
             }
 
+            const mySubmission =
+              tieBreakerState.submissions[participantId] ||
+              tieBreakerState.submissions[participant?.id || ''] ||
+              tieBreakerState.submissions[`p${selectedSeat}`] ||
+              tieBreakerState.submissions[String(selectedSeat)];
+
             return (
-              <div className="space-y-3 animate-fadeIn">
-                <div className="p-3 rounded-2xl bg-cyan-950/80 border border-cyan-400 text-cyan-200 text-center text-xs font-bold">
-                  🎯 FASTEST-FINGER-FIRST Q#{tieBreakerState.currentQuestionIndex + 1}! Select answer swiftly!
-                </div>
-                <div className="p-4 rounded-2xl bg-[#180f2d] border border-cyan-500/30 space-y-3">
-                  <p className="text-sm font-bold text-amber-100">{q?.question}</p>
-                  <div className="grid grid-cols-1 gap-2">
-                    {q?.options.map((opt, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() =>
-                          executeAction('submit_tie_breaker_answer', {
-                            participantId,
-                            optionIndex: idx,
-                            timeTakenMs: 1200,
-                          })
-                        }
-                        className="p-3.5 rounded-xl bg-black/40 hover:bg-cyan-950 border border-cyan-500/30 text-cyan-200 text-xs text-left font-semibold active:scale-[0.98] transition-all"
-                      >
-                        {['A', 'B', 'C', 'D'][idx]}: {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <TieBreakerActiveCard
+                key={tieBreakerState.currentQuestionIndex}
+                question={q}
+                questionIndex={tieBreakerState.currentQuestionIndex}
+                participantId={participantId}
+                mySubmission={mySubmission}
+                isCompleted={tieBreakerState.isCompleted}
+                winnerParticipantId={tieBreakerState.winnerParticipantId}
+                participants={participants}
+                executeAction={executeAction}
+              />
             );
           })()}
 
@@ -867,6 +873,130 @@ export function ParticipantMobileView({ state, executeAction, forcedSeat }: Part
       {/* 3. Footer */}
       <div className="py-2 text-center text-[10px] text-amber-400/50 uppercase tracking-widest font-semibold border-t border-amber-500/10">
         Mathura-Gokul Dham • Viplava 2026
+      </div>
+    </div>
+  );
+}
+
+interface TieBreakerActiveCardProps {
+  question: TieBreakerQuestion;
+  questionIndex: number;
+  participantId: string;
+  mySubmission?: TieBreakerSubmission;
+  isCompleted: boolean;
+  winnerParticipantId: string | null;
+  participants: Participant[];
+  executeAction: (action: string, payload?: Record<string, unknown>) => Promise<{ success: boolean; data?: unknown }>;
+}
+
+function TieBreakerActiveCard({
+  question,
+  questionIndex,
+  participantId,
+  mySubmission,
+  isCompleted,
+  winnerParticipantId,
+  participants,
+  executeAction,
+}: TieBreakerActiveCardProps) {
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const startTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (typeof performance !== 'undefined') {
+      startTimeRef.current = performance.now();
+    }
+  }, []);
+
+  const chosenIdx = mySubmission?.selectedOptionIndex ?? selectedOption;
+  const hasSubmitted = chosenIdx !== null && chosenIdx !== undefined;
+
+  const handleSelectOption = (e: React.MouseEvent<HTMLButtonElement>, idx: number) => {
+    e.preventDefault();
+    if (hasSubmitted) return;
+    const now = e.timeStamp;
+    const start = startTimeRef.current || now;
+    const timeTakenMs = Math.max(120, Math.round(now > start ? now - start : 1200));
+    setSelectedOption(idx);
+    soundManager.playBell();
+    executeAction('submit_tie_breaker_answer', {
+      participantId,
+      optionIndex: idx,
+      timeTakenMs,
+    });
+  };
+
+  return (
+    <div className="space-y-3 animate-fadeIn">
+      <div className="p-3 rounded-2xl bg-cyan-950/80 border border-cyan-400 text-cyan-200 text-center text-xs font-bold flex items-center justify-between">
+        <span>🎯 FASTEST-FINGER-FIRST Q#{questionIndex + 1}</span>
+        <span className="text-[10px] bg-cyan-500/30 px-2 py-0.5 rounded border border-cyan-400/50">
+          {hasSubmitted ? '✓ Answer Locked' : '⚡ Tap fast!'}
+        </span>
+      </div>
+
+      <div className="p-4 rounded-2xl bg-[#180f2d] border border-cyan-500/30 space-y-3 shadow-lg">
+        <p className="text-sm font-bold text-amber-100 leading-snug">{question?.question}</p>
+
+        <div className="grid grid-cols-1 gap-2.5">
+          {question?.options.map((opt, idx) => {
+            const isPicked = chosenIdx === idx;
+            let btnClass = 'bg-black/50 hover:bg-cyan-950/60 border-cyan-500/30 text-cyan-200';
+
+            if (isPicked) {
+              btnClass = 'bg-gradient-to-r from-cyan-600 to-blue-600 border-cyan-300 text-white font-black ring-2 ring-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.6)]';
+            } else if (hasSubmitted) {
+              btnClass = 'bg-black/30 border-slate-700 text-slate-400 opacity-60 cursor-not-allowed';
+            }
+
+            return (
+              <button
+                key={idx}
+                type="button"
+                disabled={hasSubmitted}
+                onClick={(e) => handleSelectOption(e, idx)}
+                className={`p-3.5 rounded-xl border text-left flex items-center justify-between text-xs font-semibold active:scale-[0.98] transition-all ${btnClass}`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm ${
+                    isPicked ? 'bg-black/30 text-white' : 'bg-black/40 text-cyan-300'
+                  }`}>
+                    {['A', 'B', 'C', 'D'][idx]}
+                  </span>
+                  <span>{opt}</span>
+                </div>
+
+                {isPicked && (
+                  <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-black/40 text-cyan-200">
+                    ✓ Submitted
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Submission Status Banner */}
+        {hasSubmitted && (
+          <div className="p-3 rounded-xl bg-cyan-950/90 border border-cyan-400 text-cyan-100 text-center space-y-1 animate-fadeIn">
+            <div className="text-xs font-black uppercase text-cyan-300">
+              ⚡ Response Locked! Reaction Time: {mySubmission?.timeTakenMs ? (mySubmission.timeTakenMs / 1000).toFixed(2) : 'Recorded'}s
+            </div>
+            <div className="text-[11px] text-cyan-200/80">
+              Awaiting other tied participants. Results will flash on the big screen!
+            </div>
+          </div>
+        )}
+
+        {/* Winner Display if tie-break completed */}
+        {isCompleted && (
+          <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-center font-black space-y-0.5 shadow-lg animate-bounce">
+            <div className="text-xs uppercase tracking-wider">👑 TIE-BREAKER WINNER DECIDED!</div>
+            <div className="text-sm font-cinzel">
+              Seat #{participants.find((p) => p.id === winnerParticipantId)?.seatNumber} ({participants.find((p) => p.id === winnerParticipantId)?.claimedName || participants.find((p) => p.id === winnerParticipantId)?.spiritualName})
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

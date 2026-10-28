@@ -87,14 +87,14 @@ export const INITIAL_QUIZ_STATE: QuizState = {
     },
   ],
   rules: {
-    round1: `✨ ROUND 1: ONE-TO-ONE DIRECT & PASS ROUND
-• Direct Question: Asked specifically to one designated participant.
-• Points for Direct Correct Answer: +10 Points.
-• Time limit: 30 seconds per direct question.
-• Pass-on Rule: If the participant is unable to answer or passes, the question is transferred directly to the immediate next participant.
-• Pass Limit: Only ONE pass is allowed per question (Direct → 1 Pass max).
-• Points for Pass Correct Answer: +5 Points awarded to the receiving participant.
-• If neither can answer, the Host reveals the correct answer.`,
+    round1: `✨ ROUND 1: ONE-TO-ONE DIRECT & PASS (3 SUB-ROUNDS)
+• Structure: 3 Sub-Rounds across the stage (18 questions total). Every contestant gets 3 direct questions!
+• Direct Question: +10 Points for correct answer.
+• Time limit: 20 seconds per direct question.
+• Pass-on Rule: If unable to answer, question transfers to the immediate next participant.
+• Pass Limit: Maximum 1 pass per question.
+• Points for Pass: +5 Points awarded for correct pass answer (10 seconds to answer).
+• If neither can answer, the Host reveals the transcendental answer.`,
 
     round2: `⚡ ROUND 2: RAPID FIRE ROUND
 • Structure: Each participant steps up for an intense rapid fire volley of 10 questions!
@@ -103,22 +103,23 @@ export const INITIAL_QUIZ_STATE: QuizState = {
 • No negative points for skipped or wrong answers in this round.
 • Speed and spiritual precision are key to maximizing your tally!`,
 
-    round3: `🔔 ROUND 3: THE HIGH-STAKES BUZZER ROUND
-• Structure: Open-for-all competitive round.
-• Question and 4 options will be displayed on the screen.
-• Once the Host unlocks the buzzer, participants hit their mobile buzzer button!
-• First to Buzzer: The first participant whose buzzer locks gets the exclusive right to answer.
+    round3: `🔔 ROUND 3: HIGH-STAKES BUZZER ROUND (6 QUESTIONS)
+• Structure: 6 high-voltage open buzzer questions.
+• Question and 4 options appear on screens with buzzers unlocked.
+• First to Buzz: Locks in exclusive right to answer.
+• 10-Second Clock: Exactly 10 seconds to submit your answer option after buzzing!
 • Correct Answer: +15 Points awarded!
-• Incorrect Answer: -5 Points penalty (Negative Marking applies!).
+• Incorrect Answer / Timeout: -5 Points penalty (Negative marking applies!).
 • High risk, glorious transcendental reward!`,
 
     tieBreaker: `🎯 TIE-BREAKER: FASTEST-FINGER-FIRST (FFF)
-• Applicable if two or more participants are tied for winning or podium positions.
+• Applicable if contestants are tied for winning or podium positions.
 • Tied participants receive a synchronized question with 4 options on their mobile screen.
 • Both accuracy and reaction speed are calculated down to the millisecond!
-• The fastest participant with the correct answer wins the tie-break!`,
+• The fastest participant with the correct answer wins the tie-break (+10 pts)!`,
   },
   round1Questions: [
+    // Sub-Round 1 (Questions 1 to 6 - Seats 1 to 6)
     {
       id: 'r1-q1',
       assignedSeat: 1,
@@ -182,6 +183,118 @@ export const INITIAL_QUIZ_STATE: QuizState = {
       options: ['Back to Godhead', 'The Harmonist', 'Kalyana Kalpataru', 'Gaudiya Patrika'],
       correctAnswer: 'Back to Godhead',
       explanation: 'Srila Prabhupada founded Back to Godhead magazine in 1944 in English, typing each article himself and distributing copies on the hot streets of Delhi.',
+    },
+
+    // Sub-Round 2 (Questions 7 to 12 - Seats 1 to 6)
+    {
+      id: 'r1-q7',
+      assignedSeat: 1,
+      category: 'Sannyasa in Mathura',
+      question: 'In which holy year did Srila Prabhupada formally accept the sacred renounced order of Sannyasa at Sri Keshavaji Gaudiya Math in Mathura Dham?',
+      options: ['1959', '1965', '1954', '1947'],
+      correctAnswer: '1959',
+      explanation: 'In September 1959, Srila Prabhupada accepted sannyasa in Mathura from his Godbrother Srila Bhakti Prajnana Keshava Gosvami Maharaja, adopting the name A.C. Bhaktivedanta Swami.',
+    },
+    {
+      id: 'r1-q8',
+      assignedSeat: 2,
+      category: 'Vrindavan Bhajan Kutir',
+      question: 'In which historic Vrindavan temple’s sacred courtyard did Srila Prabhupada reside from 1959 to 1965, translating the First Canto of Srimad Bhagavatam?',
+      options: ['Sri Sri Radha Damodara Temple', 'Banke Bihari Temple', 'Radha Raman Temple', 'Govindaji Temple'],
+      correctAnswer: 'Sri Sri Radha Damodara Temple',
+      explanation: 'Srila Prabhupada lived in small rooms overlooking the Samadhi of Srila Rupa Gosvami at Radha Damodara Mandir, which he called his permanent spiritual headquarters in the eternal world.',
+    },
+    {
+      id: 'r1-q9',
+      assignedSeat: 3,
+      category: 'Harinama Sankirtana',
+      question: 'In October 1966, under which famous tree in Manhattan’s Tompkins Square Park did Srila Prabhupada lead the first public outdoor Harinama chanting in the West?',
+      options: ['An American Elm Tree', 'A Banyan Tree', 'An Oak Tree', 'A Bodhi Tree'],
+      correctAnswer: 'An American Elm Tree',
+      explanation: 'Under the legendary elm tree at Tompkins Square Park, Srila Prabhupada sat on a grass mat playing his small kartals, inspiring hundreds of American youth to chant and dance for hours.',
+    },
+    {
+      id: 'r1-q10',
+      assignedSeat: 4,
+      category: 'Gokul Pastimes',
+      question: 'In Gokul, during the Damodara-lila pastime, to what household wooden object did Mother Yashoda bind little Krishna with love?',
+      options: ['A wooden grinding mortar (Ukhal)', 'A wooden temple pillar', 'A heavy bullock cart wheel', 'A wooden cow churner'],
+      correctAnswer: 'A wooden grinding mortar (Ukhal)',
+      explanation: 'Mother Yashoda bound Lord Damodara to a heavy wooden grinding mortar with ropes that were always two inches too short until Krishna conceded to her unalloyed devotional love.',
+    },
+    {
+      id: 'r1-q11',
+      assignedSeat: 5,
+      category: 'Founding ISKCON',
+      question: 'In July 1966, how many primary transcendental purposes did Srila Prabhupada enumerate when legally incorporating the International Society for Krishna Consciousness?',
+      options: ['Seven (7) Purposes', 'Four (4) Purposes', 'Ten (10) Purposes', 'Twelve (12) Purposes'],
+      correctAnswer: 'Seven (7) Purposes',
+      explanation: 'Srila Prabhupada framed the 7 Core Purposes of ISKCON in New York, focusing on systematically propagating spiritual knowledge, teaching sankirtana, building holy places, and uniting humanity in God consciousness.',
+    },
+    {
+      id: 'r1-q12',
+      assignedSeat: 6,
+      category: 'Krishna Balaram Mandir',
+      question: 'On which auspicious appearance day festival in 1975 did Srila Prabhupada inaugurate the world-famous Sri Sri Krishna Balaram Mandir in Vrindavan?',
+      options: ['Sri Rama Navami', 'Janmashtami', 'Radhashtami', 'Gaura Purnima'],
+      correctAnswer: 'Sri Rama Navami',
+      explanation: 'On Rama Navami in April 1975, Srila Prabhupada grandly opened the Krishna Balaram Mandir in Raman Reti, Vrindavan, bringing devotees from all over the world to Vraja Dham.',
+    },
+
+    // Sub-Round 3 (Questions 13 to 18 - Seats 1 to 6)
+    {
+      id: 'r1-q13',
+      assignedSeat: 1,
+      category: 'Global Preaching',
+      question: 'Between 1966 and 1977, approximately how many times did Srila Prabhupada circle the entire planet Earth at an advanced age to preach Krishna consciousness?',
+      options: ['14 times around the globe', '3 times around the globe', '7 times around the globe', '25 times around the globe'],
+      correctAnswer: '14 times around the globe',
+      explanation: 'Despite heart attacks and old age, Srila Prabhupada circled the globe fourteen times, lecturing to thousands, meeting world leaders, and establishing 108 temples across six continents.',
+    },
+    {
+      id: 'r1-q14',
+      assignedSeat: 2,
+      category: 'Govardhana Lila',
+      question: 'For how many consecutive days and nights did seven-year-old Lord Krishna hold the colossal Govardhana Hill aloft on His left pinky finger?',
+      options: ['Seven (7) days and nights', 'Three (3) days and nights', 'Ten (10) days and nights', 'Fourteen (14) days and nights'],
+      correctAnswer: 'Seven (7) days and nights',
+      explanation: 'Lord Krishna effortlessly held Sri Giriraja Govardhana for seven days and nights like an umbrella to shield the inhabitants and cows of Vraja from Indra’s torrential rains.',
+    },
+    {
+      id: 'r1-q15',
+      assignedSeat: 3,
+      category: 'BBT Book Publishing',
+      question: 'In which year did Srila Prabhupada establish the Bhaktivedanta Book Trust (BBT), the world’s largest publisher of classical Vedic literatures?',
+      options: ['1972', '1966', '1975', '1970'],
+      correctAnswer: '1972',
+      explanation: 'Srila Prabhupada created the BBT in 1972 with the explicit agreement that all proceeds would be strictly used for publishing books and constructing temples worldwide.',
+    },
+    {
+      id: 'r1-q16',
+      assignedSeat: 4,
+      category: 'Yamuna Pastimes',
+      question: 'Upon the venomous hoods of which multi-headed serpent in the Yamuna River did Lord Krishna perform His divine dancing pastime in Vraja?',
+      options: ['Kaliya Naga', 'Aghasura', 'Takshaka', 'Vasuki'],
+      correctAnswer: 'Kaliya Naga',
+      explanation: 'Lord Krishna jumped into the poisoned Yamuna whirlpool and danced upon the many hoods of Kaliya Naga, purifying him and sending him safely to Ramanaka Island.',
+    },
+    {
+      id: 'r1-q17',
+      assignedSeat: 5,
+      category: 'Transcendental Science',
+      question: 'What was the title of the insightful booklet written by Srila Prabhupada in Delhi in 1960 anticipating the exploration of space and outer cosmos?',
+      options: ['Easy Journey to Other Planets', 'Beyond Birth and Death', 'Life Comes From Life', 'The Science of Self-Realization'],
+      correctAnswer: 'Easy Journey to Other Planets',
+      explanation: 'In 1960, during the height of the space race, Prabhupada published "Easy Journey to Other Planets", demonstrating that true interplanetary and anti-material travel is achieved through bhakti-yoga.',
+    },
+    {
+      id: 'r1-q18',
+      assignedSeat: 6,
+      category: 'Eternal Departure',
+      question: 'On which sacred date did Srila Prabhupada depart this mortal world in Sri Vrindavan Dham while surrounded by the loving chanting of his disciples?',
+      options: ['November 14, 1977', 'December 25, 1975', 'August 15, 1978', 'October 2, 1976'],
+      correctAnswer: 'November 14, 1977',
+      explanation: 'On November 14, 1977, in his room at Krishna Balaram Mandir, Vrindavan, Srila Prabhupada entered into the eternal pastimes of Sri Sri Radha Krishna amid the continuous chanting of the Holy Names.',
     },
   ],
   round2Sets: [
@@ -330,24 +443,6 @@ export const INITIAL_QUIZ_STATE: QuizState = {
       pointsCorrect: 15,
       pointsWrong: -5,
       explanation: 'Anatoli Pinyayev met Srila Prabhupada secretly in Moscow in 1971 and received initiation as Ananta Shanti Das, igniting the underground Krishna conscious movement in Russia.',
-    },
-    {
-      id: 'r3-q7',
-      question: 'In which holy city did Lord Krishna slay the demonic King Kamsa and restore King Ugrasena to the royal throne?',
-      options: ['Mathura', 'Dwaraka', 'Hastinapura', 'Ayodhya'],
-      correctOptionIndex: 0,
-      pointsCorrect: 15,
-      pointsWrong: -5,
-      explanation: 'In the wrestling arena in Mathura, Lord Krishna dragged Kamsa from his elevated throne by the hair and liberated him.',
-    },
-    {
-      id: 'r3-q8',
-      question: 'What is the highest number of books distributed in a single month during the historic Prabhupada Book Marathon recorded in BBT history?',
-      options: ['Over 10 Million volumes worldwide', '50,000 copies', '100,000 copies', '500,000 copies'],
-      correctOptionIndex: 0,
-      pointsCorrect: 15,
-      pointsWrong: -5,
-      explanation: 'During the December marathons, BBT and book distributors have distributed tens of millions of transcendental volumes globally in a single annual campaign.',
     },
   ],
   tieBreakerQuestions: [
